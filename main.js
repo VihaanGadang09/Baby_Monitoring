@@ -1,6 +1,7 @@
 img = "";
 status = "";
 objects = [];
+detecting = false;  // true while the model is busy
 
 function preload(){
     song = loadSound("alarm.mp3");
@@ -22,8 +23,10 @@ function modelLoaded(){
 }
 
 function gotResults(error, results){
+    detecting = false;
     if(error){
         console.log(error);
+        return;
     }
     console.log(results);
     objects = results;
@@ -35,7 +38,11 @@ function draw(){
         r = random(255);
         g = random(255);
         b = random(255);
-        objectDetector.detect(video, gotResults);
+        if(!detecting){
+            detecting = true;
+            objectDetector.detect(video, gotResults);
+        }
+        baby_found = false;
 
         for(i = 0; i < objects.length; i++){
             document.getElementById("status").innerHTML = "Status: Object Detected";
@@ -47,21 +54,22 @@ function draw(){
             rect(objects[i].x, objects[i].y, objects[i].width, objects[i].height);
             
             if(objects[i].label == "person"){
-                document.getElementById("no_of_objects").innerHTML = "Baby Found";
-                console.log("stop");
-                song.stop();
-            }
-            else{
-                document.getElementById("no_of_objects").innerHTML = "Baby not found!";
-                console.log("play");
-                song.play();
+                baby_found = true;
             }
         }
 
-        if(objects.length == 0){
+        // only start the alarm if it isn't already ringing (otherwise it restarts 60 times a second)
+        if(baby_found){
+            document.getElementById("no_of_objects").innerHTML = "Baby Found";
+            if(song.isPlaying()){
+                song.stop();
+            }
+        }
+        else{
             document.getElementById("no_of_objects").innerHTML = "Baby not found!";
-            console.log("play");
-            song.play();
+            if(!song.isPlaying()){
+                song.play();
+            }
         }
     }
 }
